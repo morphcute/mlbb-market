@@ -9,10 +9,38 @@ import { Metadata } from "next";
 import { Suspense } from "react";
 import { SearchListings } from "@/components/search-listings";
 
-export const metadata: Metadata = {
-  title: "Browse Listings",
-  description: "Find the best MLBB skins and accounts for sale.",
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string; q?: string }>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const q = params.q;
+  const type = params.type;
+
+  let title = "Browse Listings";
+  let description = "Find the best MLBB skins and accounts for sale. Secure marketplace with escrow protection.";
+
+  if (q) {
+    title = `${q} - Search Results`;
+    description = `Search results for ${q} on MLBB Market. Find the best deals for ${q}.`;
+  } else if (type === "SKIN_GIFT") {
+    title = "Buy MLBB Skins - Skin Giftings";
+    description = "Buy Mobile Legends skins via gifting. Cheaper prices, safe delivery.";
+  } else if (type === "ACCOUNT_SALE") {
+    title = "Buy MLBB Accounts - Verified Accounts";
+    description = "Buy verified Mobile Legends accounts. Mythical Glory, many skins, safe transfer.";
+  }
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: `${title} | MLBB Market`,
+      description,
+    }
+  };
+}
 
 export default async function ListingsPage({
   searchParams,
@@ -69,7 +97,10 @@ export default async function ListingsPage({
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold">
-            {type === "SKIN_GIFT" ? "Skin Giftings" : type === "ACCOUNT_SALE" ? "Accounts for Sale" : "All Listings"}
+            {q ? `Search results for "${q}"` : 
+             type === "SKIN_GIFT" ? "Skin Giftings" : 
+             type === "ACCOUNT_SALE" ? "Accounts for Sale" : 
+             "All Listings"}
           </h1>
           
           <div className="flex items-center gap-2 w-full md:w-auto">
@@ -85,7 +116,7 @@ export default async function ListingsPage({
         {/* Filters/Tabs */}
         <div className="flex items-center gap-4 mb-8 overflow-x-auto pb-2">
           <Link href="/listings">
-            <Button variant={!type ? "primary" : "outline"} className={!type ? "bg-cyan-600 hover:bg-cyan-500" : "border-white/10 text-slate-300"}>
+            <Button variant={!type && !q ? "primary" : "outline"} className={!type && !q ? "bg-cyan-600 hover:bg-cyan-500" : "border-white/10 text-slate-300"}>
               All
             </Button>
           </Link>

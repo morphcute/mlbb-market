@@ -20,6 +20,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: listing.title,
     description: listing.description || `Buy ${listing.title} securely on MLBB Market.`,
+    openGraph: {
+      title: listing.title,
+      description: listing.description || `Buy ${listing.title} securely on MLBB Market.`,
+      images: listing.images.length > 0 ? listing.images : [],
+    },
   };
 }
 
@@ -41,6 +46,25 @@ export default async function ListingPage({
   });
 
   if (!listing) return notFound();
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: listing.title,
+    description: listing.description,
+    image: listing.images[0] || "",
+    offers: {
+      '@type': 'Offer',
+      price: listing.pricePhp,
+      priceCurrency: 'PHP',
+      availability: listing.status === 'ACTIVE' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: `https://mlbb-market.vercel.app/listings/${listing.slug}`,
+      seller: {
+        '@type': 'Person',
+        name: listing.seller.displayName,
+      },
+    },
+  };
 
   async function buyAction() {
     "use server";
@@ -76,6 +100,10 @@ export default async function ListingPage({
 
   return (
     <div className="min-h-screen bg-black text-white pb-20 pt-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -98,97 +126,113 @@ export default async function ListingPage({
                  <span className="px-3 py-1 rounded-full bg-cyan-950/50 border border-cyan-500/30 text-cyan-400 text-xs font-bold">
                    {listing.type === "SKIN_GIFT" ? "SKIN GIFT" : "ACCOUNT SALE"}
                  </span>
-                 <span className="px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 text-xs">
-                   ID: {listing.id.slice(0, 8)}
+                 <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs">
+                   ID: {listing.slug}
                  </span>
               </div>
               
               <h1 className="text-3xl md:text-4xl font-bold mb-4">{listing.title}</h1>
-              <p className="text-slate-400 leading-relaxed text-lg">{listing.description}</p>
-            </div>
-
-            {listing.accountSpec && (
-              <div className="bg-white/5 rounded-xl p-6 border border-white/5">
-                <h3 className="text-lg font-bold mb-4">Account Details</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                   <div className="p-3 bg-black/40 rounded-lg">
-                     <div className="text-xs text-slate-500">ID / Server</div>
-                     <div className="font-bold">{listing.accountSpec.mlbbId} ({listing.accountSpec.server})</div>
-                   </div>
-                   <div className="p-3 bg-black/40 rounded-lg">
-                     <div className="text-xs text-slate-500">Heroes</div>
-                     <div className="font-bold">{listing.accountSpec.heroesCount}</div>
-                   </div>
-                   <div className="p-3 bg-black/40 rounded-lg">
-                     <div className="text-xs text-slate-500">Rank</div>
-                     <div className="font-bold">{listing.accountSpec.rank}</div>
-                   </div>
-                   <div className="p-3 bg-black/40 rounded-lg">
-                     <div className="text-xs text-slate-500">Bind</div>
-                     <div className="font-bold">{listing.accountSpec.bindStatus}</div>
-                   </div>
+              
+              <div className="flex items-center gap-6 text-sm text-slate-400 border-b border-white/5 pb-6 mb-6">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span>Posted {new Date(listing.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-green-500" />
+                  <span className="text-green-500">Escrow Protected</span>
                 </div>
               </div>
-            )}
 
-            <div className="bg-white/5 rounded-xl p-6 border border-white/5">
-               <h3 className="text-lg font-bold mb-4">Terms & Instructions</h3>
-               <div className="prose prose-invert prose-sm max-w-none">
-                 <p>{listing.terms || "No specific terms provided by seller."}</p>
-                 {listing.type === "SKIN_GIFT" && (
-                   <p className="mt-4 text-yellow-500/80">
-                     Note: Requires 8-day friendship period in-game before skin can be gifted. 
-                     Seller will follow you after purchase.
-                   </p>
-                 )}
-               </div>
+              <div className="prose prose-invert max-w-none">
+                <h3 className="text-xl font-semibold mb-4 text-white">Description</h3>
+                <p className="whitespace-pre-wrap text-slate-300 leading-relaxed">{listing.description}</p>
+              </div>
+
+              {listing.accountSpec && (
+                <div className="mt-8 p-6 bg-white/5 rounded-xl border border-white/5">
+                  <h3 className="text-xl font-semibold mb-4 text-white">Account Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-slate-500 text-sm block">Rank</span>
+                      <span className="text-lg font-medium">{listing.accountSpec.rank}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-sm block">Server</span>
+                      <span className="text-lg font-medium">{listing.accountSpec.server}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-sm block">Heroes</span>
+                      <span className="text-lg font-medium">{listing.accountSpec.heroesCount}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 text-sm block">Skins</span>
+                      <span className="text-lg font-medium">{listing.accountSpec.skinsCount}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 sticky top-24">
-              <div className="flex items-end justify-between mb-6">
-                <div>
-                  <div className="text-sm text-slate-400 mb-1">Price</div>
-                  <div className="text-4xl font-bold text-cyan-400">₱{listing.pricePhp.toLocaleString()}</div>
+          <div className="lg:col-span-1">
+            <div className="sticky top-24 space-y-6">
+              {/* Price Card */}
+              <div className="p-6 bg-zinc-900/80 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl">
+                <div className="mb-6">
+                  <span className="text-slate-400 text-sm">Total Price</span>
+                  <div className="text-4xl font-bold text-white mt-1">
+                    ₱{listing.pricePhp.toLocaleString()}
+                  </div>
+                </div>
+
+                <form action={buyAction} className="space-y-3">
+                  <Button size="lg" className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold h-12 text-lg shadow-[0_0_20px_rgba(8,145,178,0.3)]">
+                    Buy Now
+                  </Button>
+                  <Button variant="outline" type="button" className="w-full border-white/10 hover:bg-white/5 text-slate-300">
+                    Make Offer
+                  </Button>
+                </form>
+
+                <div className="mt-6 flex items-start gap-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                   <ShieldCheck className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                   <p className="text-xs text-blue-200 leading-relaxed">
+                     Your payment is held securely by MLBB Market until you confirm you've received the item.
+                   </p>
                 </div>
               </div>
 
-              <form action={buyAction}>
-                <Button className="w-full h-12 text-lg font-bold bg-cyan-600 hover:bg-cyan-500 shadow-[0_0_20px_rgba(8,145,178,0.4)] mb-4">
-                   Buy Now
-                </Button>
-              </form>
-
-              <div className="space-y-3 text-sm text-slate-400">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-green-400" />
-                  <span>Escrow Protection</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span>Delivery: {listing.deliveryEtaDays ? `${listing.deliveryEtaDays} Days` : `${listing.deliveryEtaHours} Hours`}</span>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-white/10">
-                <h4 className="font-bold mb-4 flex items-center gap-2">
-                   Seller Information
-                </h4>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
-                    <User className="w-5 h-5" />
+              {/* Seller Card */}
+              <div className="p-6 bg-zinc-900/50 border border-white/5 rounded-2xl">
+                <h3 className="font-semibold mb-4 text-slate-200">Seller Information</h3>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center">
+                    <User className="w-6 h-6 text-slate-400" />
                   </div>
                   <div>
-                    <div className="font-bold">{listing.seller.displayName}</div>
-                    <div className="text-xs text-slate-500">{listing.seller.level} Seller</div>
+                    <div className="font-bold text-white">{listing.seller.displayName}</div>
+                    <div className="text-xs text-slate-400">
+                      Level {listing.seller.level} Seller
+                    </div>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full border-white/10 hover:bg-white/5">
-                  <MessageCircle className="w-4 h-4 mr-2" /> Chat Seller
+                
+                <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
+                  <div className="bg-black/30 p-2 rounded text-center">
+                    <div className="font-bold text-white">{listing.seller.salesCount}</div>
+                    <div className="text-xs text-slate-500">Sales</div>
+                  </div>
+                  <div className="bg-black/30 p-2 rounded text-center">
+                    <div className="font-bold text-white">{(listing.seller.ratingCount > 0 ? listing.seller.ratingSum / listing.seller.ratingCount : 0).toFixed(1)}</div>
+                    <div className="text-xs text-slate-500">Rating</div>
+                  </div>
+                </div>
+
+                <Button variant="ghost" className="w-full border border-white/10 hover:bg-white/5 text-slate-300 gap-2">
+                  <MessageCircle className="w-4 h-4" /> Chat with Seller
                 </Button>
-                <p className="text-xs text-slate-500 mt-2 text-center">Chat available after purchase confirmation</p>
               </div>
             </div>
           </div>
