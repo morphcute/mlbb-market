@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, ShoppingBag, ShieldCheck, Zap } from "lucide-react";
+import { ShoppingBag, ShieldCheck, Zap } from "lucide-react";
 import { getSessionUser } from "@/lib/session";
 import { UserNav } from "@/components/UserNav";
 import { Metadata } from "next";
+import { HomeSearch } from "@/components/home-search";
 
 export const metadata: Metadata = {
   title: "Home",

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, Filter, Star, Clock } from "lucide-react";
+import { Filter, Star, Clock } from "lucide-react";
 import { ListingType } from "@/generated/prisma";
 import { getSessionUser } from "@/lib/session";
 import { UserNav } from "@/components/UserNav";
 import { Metadata } from "next";
+import { Suspense } from "react";
+import { SearchListings } from "@/components/search-listings";
 
 export const metadata: Metadata = {
   title: "Browse Listings",
@@ -72,7 +73,9 @@ export default async function ListingsPage({
           </h1>
           
           <div className="flex items-center gap-2 w-full md:w-auto">
-             <SearchListings />
+             <Suspense fallback={<div className="w-80 h-10 bg-white/5 rounded animate-pulse" />}>
+               <SearchListings />
+             </Suspense>
              <Button variant="outline" className="border-white/10 text-slate-300 gap-2">
                <Filter className="w-4 h-4" /> Filter
              </Button>
@@ -98,72 +101,47 @@ export default async function ListingsPage({
           </Link>
         </div>
 
+        {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {listings.length === 0 && (
-            <div className="col-span-full text-center py-20 text-slate-500">
-              No listings found.
-            </div>
-          )}
           {listings.map((listing) => (
-            <Link key={listing.id} href={`/listings/${listing.slug}`} className="group">
-              <div className="bg-zinc-900/50 border border-white/5 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(8,145,178,0.15)] h-full flex flex-col">
-                <div className="h-48 bg-zinc-800/50 relative overflow-hidden">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${listing.type === 'SKIN_GIFT' ? 'from-purple-900/20 to-blue-900/20' : 'from-orange-900/20 to-red-900/20'}`} />
-                  {/* Placeholder for image */}
-                  <div className="absolute inset-0 flex items-center justify-center text-slate-600 font-mono text-xs">
-                    {listing.type}
+            <Link href={`/listings/${listing.id}`} key={listing.id} className="group">
+              <div className="bg-white/5 border border-white/5 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-all hover:shadow-[0_0_20px_rgba(8,145,178,0.2)]">
+                <div className="aspect-[16/9] bg-slate-900 relative">
+                  {/* Placeholder image logic */}
+                  <div className="absolute inset-0 flex items-center justify-center text-slate-600">
+                     {listing.type === "SKIN_GIFT" ? "Skin Image" : "Account Image"}
                   </div>
-                  <div className="absolute top-2 right-2 px-2 py-1 rounded bg-black/60 backdrop-blur text-xs font-bold border border-white/10">
+                  <div className="absolute top-2 right-2 bg-black/60 px-2 py-1 rounded text-xs font-mono text-cyan-400 border border-cyan-500/30">
                     {listing.type === "SKIN_GIFT" ? "SKIN" : "ACCOUNT"}
                   </div>
                 </div>
                 
-                <div className="p-4 flex-1 flex flex-col">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-bold text-lg truncate pr-2 group-hover:text-cyan-400 transition-colors">{listing.title}</h3>
-                  </div>
-                  
-                  <div className="text-slate-400 text-sm mb-4 line-clamp-2 flex-1">
-                    {listing.description}
-                  </div>
-
-                  {listing.accountSpec && (
-                    <div className="grid grid-cols-2 gap-2 mb-4 text-xs text-slate-300">
-                      <div className="bg-white/5 rounded px-2 py-1">Rank: {listing.accountSpec.rank}</div>
-                      <div className="bg-white/5 rounded px-2 py-1">Heroes: {listing.accountSpec.heroesCount}</div>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${listing.seller.level === 'PLATINUM' ? 'bg-cyan-400' : 'bg-slate-400'}`} />
-                      <span className="text-xs text-slate-400">{listing.seller.displayName}</span>
-                    </div>
-                    <div className="text-cyan-400 font-bold">
-                      ₱{listing.pricePhp.toLocaleString()}
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-lg line-clamp-1 group-hover:text-cyan-400 transition-colors">{listing.title}</h3>
+                    <div className="flex items-center gap-1 text-yellow-400 text-xs">
+                      <Star className="w-3 h-3 fill-yellow-400" />
+                      <span>{(listing.seller.ratingCount > 0 ? listing.seller.ratingSum / listing.seller.ratingCount : 0).toFixed(1)}</span>
                     </div>
                   </div>
                   
-                   <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {listing.deliveryEtaDays ? `${listing.deliveryEtaDays} days` : `${listing.deliveryEtaHours} hrs`}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Star className="w-3 h-3 text-yellow-500" />
-                        {(() => {
-                            const reviews = listing.seller.user.reviewsReceived;
-                            if (reviews.length === 0) return "New";
-                            const avg = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
-                            return avg.toFixed(1);
-                        })()}
-                        <span className="text-slate-600">({listing.seller.user.reviewsReceived.length})</span>
-                      </span>
-                   </div>
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-2xl font-bold text-white">${listing.pricePhp.toFixed(2)}</span>
+                    <div className="flex items-center gap-1 text-slate-400 text-xs">
+                      <Clock className="w-3 h-3" />
+                      <span>Instant</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </Link>
           ))}
+          
+          {listings.length === 0 && (
+            <div className="col-span-full py-20 text-center text-slate-500">
+              No listings found matching your criteria.
+            </div>
+          )}
         </div>
       </main>
     </div>
