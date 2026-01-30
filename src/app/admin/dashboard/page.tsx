@@ -3,6 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { AlertCircle, Wallet, Users, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Admin Dashboard",
+};
 
 export default async function AdminDashboard() {
   const pendingOrders = await prisma.order.count({ where: { status: "PAYMENT_PENDING" } });

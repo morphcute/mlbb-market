@@ -1,6 +1,12 @@
 import { getSessionUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { RegisterForm } from "./register-form";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Register",
+  description: "Create your account to start buying",
+};
 
 export default async function RegisterPage() {
   const user = await getSessionUser();

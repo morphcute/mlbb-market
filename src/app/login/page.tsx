@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./login-form";
+import { Metadata } from "next";
 
 async function roleRedirect() {
   const user = await getSessionUser();
@@ -16,6 +17,11 @@ async function roleRedirect() {
   }
   return redirect("/account/orders");
 }
+
+export const metadata: Metadata = {
+  title: "Login",
+  description: "Login to your account",
+};
 
 export default async function LoginPage() {
   await roleRedirect();

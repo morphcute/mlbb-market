@@ -2,6 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { redirect } from "next/navigation";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Seller Dashboard",
+};
 
 export default async function SellerDashboard() {
   const user = await getSessionUser();

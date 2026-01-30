@@ -144,6 +144,7 @@ model AccountSpec {
   id          String  @id @default(cuid())
   rank        String
   region      String
+  mlbbId      String? // Added: Game ID
   server      String
   heroesCount Int
   skinsCount  Int
@@ -163,6 +164,7 @@ model Listing {
   description      String
   pricePhp         Int
   stock            Int           @default(0)
+  images           String[]      @default([])
   deliveryEtaDays  Int?          // for skins (>=8)
   deliveryEtaHours Int?          // for accounts
   terms            String

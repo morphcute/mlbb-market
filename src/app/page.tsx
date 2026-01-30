@@ -4,6 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Search, ShoppingBag, ShieldCheck, Zap } from "lucide-react";
 import { getSessionUser } from "@/lib/session";
 import { UserNav } from "@/components/UserNav";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Home",
+};
 
 export default async function Home() {
   const user = await getSessionUser();

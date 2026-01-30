@@ -3,6 +3,25 @@ import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getSessionUser } from "@/lib/session";
 import { ShieldCheck, Clock, User, MessageCircle } from "lucide-react";
+import { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const listing = await prisma.listing.findUnique({
+    where: { slug },
+  });
+
+  if (!listing) {
+    return {
+      title: "Listing Not Found",
+    };
+  }
+
+  return {
+    title: listing.title,
+    description: listing.description || `Buy ${listing.title} securely on MLBB Market.`,
+  };
+}
 
 export default async function ListingPage({
   params,
@@ -61,11 +80,17 @@ export default async function ListingPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            <div className="bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden min-h-[400px] relative">
-               <div className={`absolute inset-0 bg-gradient-to-br ${listing.type === 'SKIN_GIFT' ? 'from-purple-900/20 to-blue-900/20' : 'from-orange-900/20 to-red-900/20'}`} />
-               <div className="absolute inset-0 flex items-center justify-center">
-                 <h1 className="text-4xl font-bold opacity-20">{listing.type}</h1>
-               </div>
+            <div className="bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden min-h-[400px] relative group">
+               {listing.images && listing.images.length > 0 ? (
+                 <img src={listing.images[0]} alt={listing.title} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" />
+               ) : (
+                 <>
+                   <div className={`absolute inset-0 bg-gradient-to-br ${listing.type === 'SKIN_GIFT' ? 'from-purple-900/20 to-blue-900/20' : 'from-orange-900/20 to-red-900/20'}`} />
+                   <div className="absolute inset-0 flex items-center justify-center">
+                     <h1 className="text-4xl font-bold opacity-20">{listing.type}</h1>
+                   </div>
+                 </>
+               )}
             </div>
 
             <div>
@@ -87,16 +112,16 @@ export default async function ListingPage({
                 <h3 className="text-lg font-bold mb-4">Account Details</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                    <div className="p-3 bg-black/40 rounded-lg">
-                     <div className="text-xs text-slate-500">Rank</div>
-                     <div className="font-bold">{listing.accountSpec.rank}</div>
+                     <div className="text-xs text-slate-500">ID / Server</div>
+                     <div className="font-bold">{listing.accountSpec.mlbbId} ({listing.accountSpec.server})</div>
                    </div>
                    <div className="p-3 bg-black/40 rounded-lg">
                      <div className="text-xs text-slate-500">Heroes</div>
                      <div className="font-bold">{listing.accountSpec.heroesCount}</div>
                    </div>
                    <div className="p-3 bg-black/40 rounded-lg">
-                     <div className="text-xs text-slate-500">Server</div>
-                     <div className="font-bold">{listing.accountSpec.server}</div>
+                     <div className="text-xs text-slate-500">Rank</div>
+                     <div className="font-bold">{listing.accountSpec.rank}</div>
                    </div>
                    <div className="p-3 bg-black/40 rounded-lg">
                      <div className="text-xs text-slate-500">Bind</div>

@@ -6,6 +6,12 @@ import { Search, Filter, Star, Clock } from "lucide-react";
 import { ListingType } from "@/generated/prisma";
 import { getSessionUser } from "@/lib/session";
 import { UserNav } from "@/components/UserNav";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Browse Listings",
+  description: "Find the best MLBB skins and accounts for sale.",
+};
 
 export default async function ListingsPage({
   searchParams,
