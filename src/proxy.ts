@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // We can't use Prisma here (Edge Runtime), so we check for the session cookie.
   // Full role verification happens in the Layouts/Pages.
   const sessionToken = request.cookies.get("session_token")?.value;
