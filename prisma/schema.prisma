@@ -1,0 +1,275 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// Force regeneration
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  SELLER
+  BUYER
+}
+
+enum SellerStatus {
+  APPLICANT
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum SellerLevel {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum ListingType {
+  SKIN_GIFT
+  ACCOUNT_SALE
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+enum OrderStatus {
+  CREATED
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+  SELLER_PENDING
+  SELLER_ACCEPTED
+  SELLER_REJECTED
+  FOLLOW_REQUIRED
+  FOLLOWED
+  ELIGIBLE_TO_GIFT
+  DELIVERED
+  BUYER_CONFIRMED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentMethod {
+  FB_MANUAL
+  GCASH_MANUAL
+  BANK_MANUAL
+  PAY_LATER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+
+  sellerProfile   SellerProfile?
+  sellerApplication SellerApplication?
+  ordersBuyer     Order[]     @relation("BuyerOrders")
+  ordersSeller    Order[]     @relation("SellerOrders")
+  reviewsGiven    Review[]    @relation("ReviewBuyer")
+  reviewsReceived Review[]    @relation("ReviewSeller")
+  chatMessagesSent ChatMessage[]
+  ticketsOpened    Ticket[]     @relation("TicketOpener")
+  ticketMessagesSent TicketMessage[]
+  sessions        Session[]
+}
+
+model SellerProfile {
+  id          String       @id @default(cuid())
+  userId      String       @unique
+  user        User         @relation(fields: [userId], references: [id])
+  displayName String
+  status      SellerStatus @default(APPLICANT)
+  level       SellerLevel  @default(BRONZE)
+  active      Boolean      @default(false)
+  notes       String?
+  salesCount  Int          @default(0)
+  ratingCount Int          @default(0)
+  ratingSum   Int          @default(0)
+  createdAt   DateTime     @default(now())
+
+  listings    Listing[]
+}
+
+model SellerApplication {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  fullName      String
+  fbLink        String?
+  gcashNumber   String?
+  proofUrl      String?
+  submittedAt   DateTime @default(now())
+  reviewedAt    DateTime?
+  decisionNote  String?
+}
+
+model Skin {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  category  String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  listings  Listing[]
+}
+
+model AccountSpec {
+  id          String  @id @default(cuid())
+  rank        String
+  region      String
+  server      String
+  heroesCount Int
+  skinsCount  Int
+  bindStatus  String
+  notes       String?
+
+  listings    Listing[]
+}
+
+model Listing {
+  id               String       @id @default(cuid())
+  slug             String       @unique
+  type             ListingType
+  sellerId         String
+  seller           SellerProfile @relation(fields: [sellerId], references: [id])
+  title            String
+  description      String
+  pricePhp         Int
+  stock            Int           @default(0)
+  deliveryEtaDays  Int?          // for skins (>=8)
+  deliveryEtaHours Int?          // for accounts
+  terms            String
+  status           ListingStatus @default(DRAFT)
+  skinId           String?       
+  skin             Skin?         @relation(fields: [skinId], references: [id])
+  accountSpecId    String?
+  accountSpec      AccountSpec?  @relation(fields: [accountSpecId], references: [id])
+  createdAt        DateTime      @default(now())
+
+  orders           Order[]
+}
+
+model Order {
+  id              String       @id @default(cuid())
+  orderCode       String       @unique
+  listingId       String
+  listing         Listing      @relation(fields: [listingId], references: [id])
+  buyerId         String
+  buyer           User         @relation("BuyerOrders", fields: [buyerId], references: [id])
+  sellerId        String
+  seller          User         @relation("SellerOrders", fields: [sellerId], references: [id])
+  status          OrderStatus  @default(CREATED)
+  paymentMethod   PaymentMethod
+  paymentProofUrl String?
+  paymentRefText  String?
+  adminConfirmedAt DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // SKIN_GIFT specifics
+  dateFollowed     DateTime?
+  eligibleAt       DateTime?
+
+  // ACCOUNT_SALE specifics
+  handoverChecklistAccepted Boolean @default(false)
+
+  timelineEvents  OrderTimelineEvent[]
+  chatMessages    ChatMessage[]
+  tickets         Ticket[]
+  review          Review?
+}
+
+model OrderTimelineEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+  createdBy String?
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  buyerId   String
+  buyer     User     @relation("ReviewBuyer", fields: [buyerId], references: [id])
+  sellerId  String
+  seller    User     @relation("ReviewSeller", fields: [sellerId], references: [id])
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  content   String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false)
+}
+
+model Ticket {
+  id          String       @id @default(cuid())
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id])
+  openedById  String
+  openedBy    User         @relation("TicketOpener", fields: [openedById], references: [id])
+  subject     String
+  status      TicketStatus @default(OPEN)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  messages    TicketMessage[]
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  sessionToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+}
