@@ -72,16 +72,7 @@ export default async function ListingsPage({
           </h1>
           
           <div className="flex items-center gap-2 w-full md:w-auto">
-             <form className="relative flex-1 md:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <Input 
-                  name="q"
-                  defaultValue={q}
-                  placeholder="Search..." 
-                  className="pl-10 bg-white/5 border-white/10"
-                />
-                {type && <input type="hidden" name="type" value={type} />}
-             </form>
+             <SearchListings />
              <Button variant="outline" className="border-white/10 text-slate-300 gap-2">
                <Filter className="w-4 h-4" /> Filter
              </Button>

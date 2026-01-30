@@ -83,16 +83,7 @@ export default async function Home() {
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center gap-4 max-w-lg mx-auto">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <Input 
-                placeholder="Search skins, heroes, or ranks..." 
-                className="pl-10 h-12 bg-white/5 border-white/10 focus:border-cyan-500/50 text-white w-full"
-              />
-            </div>
-            <Button className="h-12 px-8 bg-cyan-600 hover:bg-cyan-500 text-white w-full md:w-auto">
-              Search
-            </Button>
+             <HomeSearch />
           </div>
         </div>
       </section>
